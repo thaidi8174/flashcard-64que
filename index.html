@@ -167,7 +167,18 @@ let state={
   groupRandom:false,
 };
 
-function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function shuffle(a){
+  const b=[...a];
+  // Use crypto for better randomness if available
+  const rnd=typeof crypto!=='undefined'&&crypto.getRandomValues
+    ?()=>{const arr=new Uint32Array(1);crypto.getRandomValues(arr);return arr[0]/0xFFFFFFFF;}
+    :Math.random;
+  for(let i=b.length-1;i>0;i--){
+    const j=Math.floor(rnd()*(i+1));
+    [b[i],b[j]]=[b[j],b[i]];
+  }
+  return b;
+}
 function queByGroup(id){return QUE_ALL.filter(q=>Math.floor(q.so/10)===id);}
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -302,7 +313,7 @@ function bindGroup(){
     else orderedDeck=[];
     if(!orderedDeck.length) return;
     const deck=(state.groupRandom&&!state.all64)?shuffle([...orderedDeck]):orderedDeck;
-    state.deck=deck;state.idx=0;state.face='front';state.revealed=false;
+    state.deck=deck;state.originalDeck=[...deck];state.idx=0;state.face='front';state.revealed=false;
     state.know=0;state.dkSet=new Set();state.screen='study';render();
   };
 }
@@ -429,7 +440,7 @@ function bindDone(){
     state.know=0;state.dkSet=new Set();state.screen='study';render();
   };
   document.getElementById('btn-restart').onclick=()=>{
-    state.deck=shuffle([...state.deck]);state.idx=0;state.face='front';state.revealed=false;
+    state.deck=shuffle([...(state.originalDeck||state.deck)]);state.idx=0;state.face='front';state.revealed=false;
     state.know=0;state.dkSet=new Set();state.screen='study';render();
   };
   document.getElementById('btn-menu').onclick=()=>{state.screen='menu';render();};
@@ -518,45 +529,5 @@ function removeDiacritics(s){
 render();
 </script>
 
-<script>
-if('serviceWorker' in navigator){
-  // Inline service worker as blob to avoid needing a separate sw.js file
-  const swCode = `
-const CACHE='flashcard-64que-v1';
-self.addEventListener('install',e=>{
-  e.waitUntil(
-    caches.open(CACHE).then(cache=>cache.add('/'))
-    .catch(()=>{}) // offline install ok
-  );
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(
-    keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
-  )));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  e.respondWith(
-    caches.match(e.request).then(cached=>{
-      if(cached) return cached;
-      return fetch(e.request).then(resp=>{
-        if(resp&&resp.status===200){
-          const clone=resp.clone();
-          caches.open(CACHE).then(cache=>cache.put(e.request,clone));
-        }
-        return resp;
-      }).catch(()=>cached||new Response('Offline',{status:503}));
-    })
-  );
-});
-`;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  const url=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(url,{scope:'/'})
-    .then(()=>console.log('SW registered'))
-    .catch(e=>console.log('SW failed:',e));
-}
-</script>
 </body>
 </html>
