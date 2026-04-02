@@ -273,8 +273,11 @@ function bindGroup(){
   document.getElementById('back-btn').onclick=()=>{state.screen='menu';render();};
   document.querySelectorAll('[data-all64]').forEach(el=>{
     el.addEventListener('click',()=>{
-      state.all64=state.all64===el.dataset.all64?null:el.dataset.all64;
-      if(state.all64) state.ticked=new Set();
+      const v=el.dataset.all64;
+      state.all64=state.all64===v?null:v;
+      // untick all groups when selecting 64-que option
+      state.ticked=new Set();
+      state.groupRandom=false;
       state.allRandom=(state.all64==='random');
       render();
     });
@@ -282,6 +285,8 @@ function bindGroup(){
   document.querySelectorAll('[data-gid]').forEach(el=>{
     el.addEventListener('click',()=>{
       const id=parseInt(el.dataset.gid);
+      // untick tuần tự/random when selecting a group
+      state.all64=null;
       state.allRandom=false;
       if(state.ticked.has(id))state.ticked.delete(id);else state.ticked.add(id);
       render();
