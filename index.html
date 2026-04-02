@@ -517,5 +517,46 @@ function removeDiacritics(s){
 
 render();
 </script>
+
+<script>
+if('serviceWorker' in navigator){
+  // Inline service worker as blob to avoid needing a separate sw.js file
+  const swCode = `
+const CACHE='flashcard-64que-v1';
+self.addEventListener('install',e=>{
+  e.waitUntil(
+    caches.open(CACHE).then(cache=>cache.add('/'))
+    .catch(()=>{}) // offline install ok
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(
+    keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
+  )));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(
+    caches.match(e.request).then(cached=>{
+      if(cached) return cached;
+      return fetch(e.request).then(resp=>{
+        if(resp&&resp.status===200){
+          const clone=resp.clone();
+          caches.open(CACHE).then(cache=>cache.put(e.request,clone));
+        }
+        return resp;
+      }).catch(()=>cached||new Response('Offline',{status:503}));
+    })
+  );
+});
+`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url,{scope:'/'})
+    .then(()=>console.log('SW registered'))
+    .catch(e=>console.log('SW failed:',e));
+}
+</script>
 </body>
 </html>
