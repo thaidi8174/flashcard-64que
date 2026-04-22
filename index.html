@@ -53,8 +53,8 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
 .search-detail{padding:14px 16px;border-radius:14px;border:none;background:rgba(255,255,255,0.04);margin-top:4px;margin-bottom:8px;}
 
 /* GROUP SELECT */
-.groups-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.group-item{padding:14px 14px;border-radius:16px;cursor:pointer;transition:opacity 0.1s;}
+.groups-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.group-item{padding:11px 12px;border-radius:14px;cursor:pointer;transition:opacity 0.1s;}
 .group-item:active{opacity:0.6;}
 .checkbox{width:22px;height:22px;border-radius:11px;border:2px solid rgba(255,255,255,0.28);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;}
 
@@ -247,11 +247,11 @@ function renderGroup(){
     QUE_ALL.filter(q=>s.ticked.has(Math.floor(q.so/10)));
   const canStart=orderedDeck.length>0;
   return `<div class="screen">
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:22px;padding-top:16px">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;padding-top:16px">
       <button class="btn-back" id="back-btn">‹</button>
       <span style="font-size:17px;font-weight:600;letter-spacing:-0.3px">${s.mode==='review'?'Ôn bài':'Kiểm tra'} — Chọn nhóm</span>
     </div>
-    <div style="display:flex;gap:10px;margin-bottom:16px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
       ${['ordered','random'].map(v=>{
         const on=s.all64===v;
         return `<div data-all64="${v}" style="flex:1;padding:13px 14px;border-radius:14px;border:1.5px solid ${on?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.12)'};background:${on?'rgba(255,255,255,0.1)':'#2a2a2a'};cursor:pointer;text-align:center">
@@ -263,14 +263,12 @@ function renderGroup(){
     <div class="groups-grid">
       ${NGOAI.map(g=>{
         const on=s.ticked.has(g.id)&&!s.allRandom;
-        const queLst=queByGroup(g.id);
         return `<div class="group-item" data-gid="${g.id}" style="border:1.5px solid ${on?g.color:'rgba(255,255,255,0.1)'};background:${on?'rgba(255,255,255,0.06)':'#2a2a2a'}">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:20px;color:${g.color}">${g.icon}</span>
             <span style="font-size:16px;font-weight:600;letter-spacing:-0.2px">${g.name}</span>
             <span style="margin-left:auto;width:20px;height:20px;border-radius:10px;border:2px solid ${on?g.color:'rgba(255,255,255,0.28)'};background:${on?g.color:'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000">${on?'✓':''}</span>
           </div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.38);line-height:1.5">${queLst.map(q=>esc(q.name)).join(' · ')}</div>
         </div>`;
       }).join('')}
     </div>
