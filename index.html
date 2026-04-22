@@ -454,58 +454,55 @@ function bindDone(){
 }
 
 // ── SEARCH ──
-function renderSearch(){
-  const raw=state.searchQ.trim().toLowerCase();
-  const q=removeDiacritics(raw);
-  function normSearch(s){return removeDiacritics(s.toLowerCase());}
-  function matchSearch(query,name,so,dong1,tuKhoa){
-    if(!query) return true;
-    const nameNorm=normSearch(name);
-    const nameNoSpace=nameNorm.replace(/\s/g,'');
-    const nameWords=nameNorm.split(' ');
-    const dong1Norm=normSearch(dong1);
-    const tuKhoaNorm=normSearch(tuKhoa);
-    const soStr=String(so);
-    // nospace compound ≥6 chars → match full string
-    if(!query.includes(' ')&&query.length>=6){
-      return nameNorm.includes(query)||nameNoSpace.includes(query)||
-             soStr.includes(query)||dong1Norm.includes(query)||tuKhoaNorm.includes(query);
-    }
-    // token matching: each space-separated token must match a word in name (in order) or match so/dong1/tuKhoa
-    const tokens=query.split(/\s+/).filter(Boolean);
-    let wi=0;
-    for(const t of tokens){
-      let found=false;
-      while(wi<nameWords.length){
-        if(nameWords[wi].startsWith(t)){found=true;wi++;break;}
-        wi++;
-      }
-      if(!found){
-        if(!soStr.includes(t)&&!dong1Norm.includes(t)&&!tuKhoaNorm.includes(t)) return false;
-      }
-    }
-    return true;
+function normSearch(s){return removeDiacritics(s.toLowerCase());}
+function matchSearch(query,name,so,dong1,tuKhoa){
+  if(!query) return true;
+  const nameNorm=normSearch(name);
+  const nameNoSpace=nameNorm.replace(/\s/g,'');
+  const nameWords=nameNorm.split(' ');
+  const dong1Norm=normSearch(dong1);
+  const tuKhoaNorm=normSearch(tuKhoa);
+  const soStr=String(so);
+  if(!query.includes(' ')&&query.length>=6){
+    return nameNorm.includes(query)||nameNoSpace.includes(query)||
+           soStr.includes(query)||dong1Norm.includes(query)||tuKhoaNorm.includes(query);
   }
+  const tokens=query.split(/\s+/).filter(Boolean);
+  let wi=0;
+  for(const t of tokens){
+    let found=false;
+    while(wi<nameWords.length){
+      if(nameWords[wi].startsWith(t)){found=true;wi++;break;}
+      wi++;
+    }
+    if(!found){
+      if(!soStr.includes(t)&&!dong1Norm.includes(t)&&!tuKhoaNorm.includes(t)) return false;
+    }
+  }
+  return true;
+}
+function searchResultsHTML(q){
   const res=q?QUE_ALL.filter(x=>matchSearch(q,x.name,x.so,x.dong1,x.tuKhoa)):QUE_ALL;
+  return res.map(r=>`
+    <div class="search-item" data-so="${r.so}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span style="font-size:13px;color:rgba(255,255,255,0.38);min-width:28px;font-variant-numeric:tabular-nums">${r.so}</span>
+          <span style="font-size:17px;font-weight:600;letter-spacing:-0.2px">${esc(r.name)}</span>
+        </div>
+        <span style="font-size:13px;color:rgba(255,255,255,0.4)">${esc(r.dong1.split('. ')[1]||'')}</span>
+      </div>
+    </div>
+  `).join('')+(res.length===0?'<div style="font-size:16px;color:rgba(255,255,255,0.35);text-align:center;padding:3rem 0">Không tìm thấy</div>':'');
+}
+function renderSearch(){
+  const q=removeDiacritics(state.searchQ.trim().toLowerCase());
   return `<div class="screen">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;padding-top:16px">
       <button class="btn-back" id="back-btn">‹</button>
       <input class="search-input" id="search-input" value="${esc(state.searchQ)}" placeholder="Tìm tên, số, từ khoá...">
     </div>
-    <div id="results">
-      ${res.map(r=>`
-        <div class="search-item" data-so="${r.so}">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="display:flex;align-items:baseline;gap:10px">
-              <span style="font-size:13px;color:rgba(255,255,255,0.38);min-width:28px;font-variant-numeric:tabular-nums">${r.so}</span>
-              <span style="font-size:17px;font-weight:600;letter-spacing:-0.2px">${esc(r.name)}</span>
-            </div>
-            <span style="font-size:13px;color:rgba(255,255,255,0.4)">${esc(r.dong1.split('. ')[1]||'')}</span>
-          </div>
-        </div>
-      `).join('')}
-      ${res.length===0?'<div style="font-size:16px;color:rgba(255,255,255,0.35);text-align:center;padding:3rem 0">Không tìm thấy</div>':''}
-    </div>
+    <div id="results">${searchResultsHTML(q)}</div>
   </div>`;
 }
 function showPopup(so){
@@ -548,7 +545,18 @@ function bindSearch(){
   document.getElementById('back-btn').onclick=()=>{state.screen='menu';render();};
   const inp=document.getElementById('search-input');
   inp.focus();
-  inp.addEventListener('input',()=>{state.searchQ=inp.value;render();});
+  function updateResults(){
+    state.searchQ=inp.value;
+    const q=removeDiacritics(state.searchQ.trim().toLowerCase());
+    const el=document.getElementById('results');
+    if(el){
+      el.innerHTML=searchResultsHTML(q);
+      el.querySelectorAll('.search-item').forEach(e=>{
+        e.addEventListener('click',()=>showPopup(parseInt(e.dataset.so)));
+      });
+    }
+  }
+  inp.addEventListener('input',updateResults);
   document.querySelectorAll('.search-item').forEach(el=>{
     el.addEventListener('click',()=>showPopup(parseInt(el.dataset.so)));
   });
